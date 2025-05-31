@@ -14,17 +14,41 @@ const useContextMenu = () => {
     y: 0,
     isOpen: false,
   });
+  const OFFSET = 8; // 컨텍스트 메뉴 우클릭 위치 조정 값
 
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
+  // 컨텍스트 메뉴 우클릭 핸들러
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
-    const clickX = event.pageX;
-    const clickY = event.pageY;
+    const clickX = event.pageX + OFFSET;
+    const clickY = event.pageY + OFFSET;
+
+    // 화면 밖에 메뉴 렌더링해서 원본 크기 측정
     setContextMenuState({
-      x: clickX,
-      y: clickY,
+      x: -9999,
+      y: -9999,
       isOpen: true,
+    });
+
+    requestAnimationFrame(() => {
+      if (contextMenuRef.current) {
+        const rect = contextMenuRef.current.getBoundingClientRect();
+
+        const screenW = document.documentElement.scrollWidth;
+        const screenH = document.documentElement.scrollHeight;
+
+        // 위치 계산 (화면 밖으로 안 나가게)
+        const adjustedX = Math.min(clickX, screenW - rect.width);
+        const adjustedY = Math.min(clickY, screenH - rect.height);
+
+        // 메뉴를 계산한 위치로 이동
+        setContextMenuState({
+          x: adjustedX,
+          y: adjustedY,
+          isOpen: true,
+        });
+      }
     });
   }, []);
 
