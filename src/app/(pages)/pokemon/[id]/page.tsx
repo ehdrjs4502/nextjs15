@@ -1,25 +1,32 @@
-'use client';
-import { pokemonDetailOptions } from '@/app/_api/pokemon';
-import { useQuery } from '@tanstack/react-query';
+import { fetchPokemonDetail } from '@/app/_api/pokemon';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function PokemonDetailPage() {
-  const { id } = useParams();
-  const { data, error, isLoading } = useQuery(pokemonDetailOptions(Number(id)));
+async function PokemonDetail({ id }: { id: number }) {
+  const data = await fetchPokemonDetail(id);
 
-  if (error) {
-    return <div>데이터를 불러오는데 실패했습니다.</div>;
-  }
-
-  if (isLoading) {
-    return <div>로딩중...</div>;
+  if (data.error) {
+    return <div>{data.error}</div>;
   }
 
   return (
     <div>
-      <h2>{data?.korean_name}</h2>
-      <Image src={data?.image} alt={data?.name} width={100} height={100} />
+      <h2>{data.korean_name}</h2>
+      <Image src={data.image} alt={data.name} width={100} height={100} />
     </div>
+  );
+}
+
+export default function PokemonDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const id = Number(params.id);
+
+  return (
+    <Suspense fallback={<div>로딩중...</div>}>
+      <PokemonDetail id={id} />
+    </Suspense>
   );
 }

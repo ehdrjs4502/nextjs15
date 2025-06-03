@@ -2,31 +2,33 @@
 import { queryOptions } from '@tanstack/react-query'
 import axios from 'axios'
 
-
-export const pokemonDetailOptions = (id: number) =>
-  queryOptions({
-    queryKey: ['pokemon', 'detail', id],
-    queryFn: async () => {
-      const [response, speciesResponse] = await Promise.all([
-        axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`),
-        axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
-      ])
-      const data = response.data
-      const koreanNameObj = speciesResponse.data.names.find(
-        (name: any) => name.language.name === 'ko'
-      )
-      return {
-        id: data.id,
-        name: data.name,
-        korean_name: koreanNameObj ? koreanNameObj.name : data.name,
-        image: data.sprites.front_default,
-        types: data.types.map((t: any) => t.type.name),
-        height: data.height,
-        weight: data.weight,
-        base_experience: data.base_experience,
-      }
-    },
-  });
+export const fetchPokemonDetail = async (id: number) => {
+  try {
+    const [response, speciesResponse] = await Promise.all([
+      axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`),
+      axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
+    ]);
+    const data = response.data;
+    const koreanNameObj = speciesResponse.data.names.find(
+      (name: any) => name.language.name === 'ko'
+    );
+    return {
+      id: data.id,
+      name: data.name,
+      korean_name: koreanNameObj ? koreanNameObj.name : data.name,
+      image: data.sprites.front_default,
+      types: data.types.map((t: any) => t.type.name),
+      height: data.height,
+      weight: data.weight,
+      base_experience: data.base_experience,
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return { error: '포켓몬을 찾을 수 없습니다.' };
+    }
+    return { error: '데이터를 불러오는 중 오류가 발생했습니다.' };
+  }
+};
 
 export type PageData = {
   data: any[];
