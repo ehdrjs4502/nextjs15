@@ -1,6 +1,6 @@
 // src/app/_api/pokemon.ts
-import { queryOptions } from '@tanstack/react-query'
-import axios from 'axios'
+import { queryOptions } from '@tanstack/react-query';
+import axios from 'axios';
 
 export const fetchPokemonDetail = async (id: number) => {
   try {
@@ -10,12 +10,11 @@ export const fetchPokemonDetail = async (id: number) => {
     ]);
     const data = response.data;
     const koreanNameObj = speciesResponse.data.names.find(
-      (name: any) => name.language.name === 'ko'
+      (name: any) => name.language.name === 'ko',
     );
     return {
       id: data.id,
-      name: data.name,
-      korean_name: koreanNameObj ? koreanNameObj.name : data.name,
+      name: koreanNameObj ? koreanNameObj.name : data.name,
       image: data.sprites.front_default,
       types: data.types.map((t: any) => t.type.name),
       height: data.height,
@@ -36,26 +35,70 @@ export type PageData = {
   total: number;
 };
 
-export const pokemonInfiniteListOptions = (pageSize: number = 10) =>
+export const pokemonListFetch = async () => {
+  const response = await fetch(
+    'https://pokeapi.co/api/v2/pokemon?limit=9&offset=0',
+  );
+  const { results } = await response.json();
+
+  const requests = results.map(async (pokemon: any) => {
+    const id = pokemon.url.split('/').filter(Boolean).pop();
+    const [detailResponse, speciesResponse] = await Promise.all([
+      fetch(pokemon.url),
+      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
+    ]);
+    const detail = await detailResponse.json();
+    const species = await speciesResponse.json();
+    const koreanNameObj = species.names.find(
+      (name: any) => name.language.name === 'ko',
+    );
+    return {
+      id: detail.id,
+      name: koreanNameObj ? koreanNameObj.name : detail.name,
+      image: detail.sprites.front_default,
+      types: detail.types.map((t: any) => t.type.name),
+    };
+  });
+
+  const data = await Promise.all(requests);
+
+  return data;
+};
+
+export const pokemonListAxios = async () => {
+  const response = await axios.get(
+    'https://pokeapi.co/api/v2/pokemon?limit=9&offset=0',
+  );
+  const results = response.data.results;
+
+  const requests = results.map(async (pokemon: any) => {
+    const id = pokemon.url.split('/').filter(Boolean).pop();
+    const [detail, species] = await Promise.all([
+      axios.get(pokemon.url),
+      axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
+    ]);
+    const koreanNameObj = species.data.names.find(
+      (name: any) => name.language.name === 'ko',
+    );
+    return {
+      id: detail.data.id,
+      name: koreanNameObj ? koreanNameObj.name : detail.data.name,
+      image: detail.data.sprites.front_default,
+      types: detail.data.types.map((t: any) => t.type.name),
+    };
+  });
+
+  const data = await Promise.all(requests);
+
+  return data;
+};
+
+export const pokemonListWithQuery = () =>
   queryOptions<PageData, Error, PageData, (string | number)[]>({
-    queryKey: ['pokemon', 'gen1', pageSize],
-    queryFn: async ({ pageParam = 0 }) => {
-      const page = Number(pageParam);
-      const offset = page * pageSize;
-      // 151번까지만 요청
-      const limit = Math.min(pageSize, 151 - offset);
-
-      if (limit <= 0) {
-        // 더 이상 불러올 데이터 없음
-        return {
-          data: [],
-          nextPage: null,
-          total: 151,
-        };
-      }
-
+    queryKey: ['pokemon', 'list'],
+    queryFn: async () => {
       const response = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`
+        'https://pokeapi.co/api/v2/pokemon?limit=9&offset=0',
       );
       const results = response.data.results;
 
@@ -65,13 +108,14 @@ export const pokemonInfiniteListOptions = (pageSize: number = 10) =>
           axios.get(pokemon.url),
           axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
         ]);
+
         const koreanNameObj = species.data.names.find(
-          (name: any) => name.language.name === 'ko'
+          (name: any) => name.language.name === 'ko',
         );
+
         return {
           id: detail.data.id,
-          name: detail.data.name,
-          korean_name: koreanNameObj ? koreanNameObj.name : detail.data.name,
+          name: koreanNameObj ? koreanNameObj.name : detail.data.name,
           image: detail.data.sprites.front_default,
           types: detail.data.types.map((t: any) => t.type.name),
         };
@@ -79,15 +123,10 @@ export const pokemonInfiniteListOptions = (pageSize: number = 10) =>
 
       const data = await Promise.all(requests);
 
-      // nextPage 계산: 마지막 포켓몬이 151번이면 더 이상 없음
-      const nextOffset = offset + limit;
-      const nextPage = nextOffset < 151 ? page + 1 : null;
-
       return {
         data,
-        nextPage,
-        total: 151,
+        nextPage: null,
+        total: data.length,
       };
     },
   });
-  
