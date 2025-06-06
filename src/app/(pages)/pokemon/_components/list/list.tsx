@@ -1,7 +1,8 @@
-// 'use client';
+'use client';
 // import { pokemonListWithQuery } from '@/app/_api/pokemon';
 // import { useQuery } from '@tanstack/react-query';
-import { pokemonListAxios } from '@/app/_api/pokemon';
+import { pokemonListWithQuery } from '@/app/_api/pokemon';
+import { useQuery } from '@tanstack/react-query';
 import Card from '../card/card';
 import S from './list.module.css';
 
@@ -12,13 +13,13 @@ interface PokemonData {
   types: string[];
 }
 
-export default async function List() {
-  // const { data } = useQuery(pokemonListWithQuery());
-  const data = await pokemonListAxios();
+export default function List() {
+  const { data } = useQuery(pokemonListWithQuery());
+  // const data = await pokemonListAxios();
 
   console.log(data);
 
-  if (!data || data.length === 0) {
+  if (!data || data.data.length === 0) {
     return (
       <div>
         <h1>1세대 포켓몬</h1>
@@ -31,7 +32,7 @@ export default async function List() {
     <div>
       <h1>1세대 포켓몬</h1>
       <div className={S.container}>
-        {data.map((pokemon: PokemonData) => (
+        {data.data.map((pokemon: PokemonData) => (
           <Card
             key={pokemon.id}
             id={pokemon.id}
