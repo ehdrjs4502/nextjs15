@@ -31,8 +31,6 @@ export const fetchPokemonDetail = async (id: number) => {
 
 export type PageData = {
   data: any[];
-  nextPage: number | null;
-  total: number;
 };
 
 export const pokemonListFetch = async () => {
@@ -97,36 +95,9 @@ export const pokemonListWithQuery = () =>
   queryOptions<PageData, Error, PageData, (string | number)[]>({
     queryKey: ['pokemon', 'list'],
     queryFn: async () => {
-      const response = await axios.get(
-        'https://pokeapi.co/api/v2/pokemon?limit=9&offset=0',
-      );
-      const results = response.data.results;
-
-      const requests = results.map(async (pokemon: any) => {
-        const id = pokemon.url.split('/').filter(Boolean).pop();
-        const [detail, species] = await Promise.all([
-          axios.get(pokemon.url),
-          axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
-        ]);
-
-        const koreanNameObj = species.data.names.find(
-          (name: any) => name.language.name === 'ko',
-        );
-
-        return {
-          id: detail.data.id,
-          name: koreanNameObj ? koreanNameObj.name : detail.data.name,
-          image: detail.data.sprites.front_default,
-          types: detail.data.types.map((t: any) => t.type.name),
-        };
-      });
-
-      const data = await Promise.all(requests);
-
+      const data = await pokemonListAxios();
       return {
         data,
-        nextPage: null,
-        total: data.length,
       };
     },
   });
