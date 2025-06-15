@@ -1,15 +1,17 @@
 'use client';
 import { getMockDataAxiosById } from '@/app/_api/mock';
-import { useGetData } from '@/app/_hooks/useGetData';
 import Image from 'next/image';
 import Link from 'next/link';
 import Button from '../../../_components/button';
 import DeleteButton from '../delete-button';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Detail({ id }: { id: string }) {
-  const { data } = useGetData({
+  const { data } = useQuery({
     queryKey: ['mock', 'users', id as string],
     queryFn: () => getMockDataAxiosById(id as string),
+    staleTime: 1000 * 60 * 5, // 5분
+    gcTime: 1000 * 60 * 10, // 10분
   });
 
   return (

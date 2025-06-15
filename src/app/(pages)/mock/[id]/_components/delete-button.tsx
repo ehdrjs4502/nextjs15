@@ -1,8 +1,8 @@
 'use client';
 import { deleteMockDataAxios } from '@/app/_api/mock';
-import { useMutationData } from '@/app/_hooks/useMutationData';
 import { useRouter } from 'next/navigation';
 import Button from '../../_components/button';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   userId: string;
@@ -11,15 +11,18 @@ interface Props {
 
 export default function DeleteButton({ userId, userName }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const { mutate: deleteMockData, isPending } = useMutationData({
-    queryKey: ['mock', 'users'],
-    queryFn: deleteMockDataAxios,
+  const { mutate, isPending } = useMutation({
+    mutationFn: deleteMockDataAxios,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mock', 'users'] });
+    },
   });
 
   const handleDelete = () => {
     if (confirm(`정말로 ${userName}를 삭제하시겠습니까?`)) {
-      deleteMockData(userId, {
+      mutate(userId, {
         onSuccess: () => {
           alert('삭제되었습니다!');
           router.push('/mock');
