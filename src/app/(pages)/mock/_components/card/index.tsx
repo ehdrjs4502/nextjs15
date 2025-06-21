@@ -1,7 +1,7 @@
-import { updateMockDataAxios, User } from '@/app/_api/mock';
+import { User } from '@/app/_api/mock';
+import { useUpdateMock } from '@/app/_hooks/useMock';
 import Image from 'next/image';
 import S from './card.module.css';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   user: User;
@@ -10,14 +10,7 @@ interface Props {
 }
 
 export default function Card({ user, onClick, isSelected }: Props) {
-  const queryClient = useQueryClient();
-  const { mutate, isPending } = useMutation({
-    mutationFn: ({ id, isFavorite }: { id: string; isFavorite: boolean }) =>
-      updateMockDataAxios(id, isFavorite),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mock', 'users'] });
-    },
-  });
+  const { mutate, isPending } = useUpdateMock();
 
   const handleFavorite = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();

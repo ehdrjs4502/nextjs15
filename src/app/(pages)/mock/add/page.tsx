@@ -1,5 +1,5 @@
 'use client';
-import { postMockDataAxios } from '@/app/_api/mock';
+import { QUERY_KEYS } from '@/app/_constants/keys';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -11,10 +11,27 @@ export default function AddPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const addUserMutation = useMutation({
-    mutationFn: postMockDataAxios,
+  const { mutate: addUserMutation, isPending } = useMutation({
+    mutationFn: () =>
+      fetch(
+        `https://${process.env.NEXT_PUBLIC_API_KEY}.mockapi.io/api/v1/users`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name }),
+        },
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mock', 'users'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.MOCK.users() });
+      router.push('/mock');
+    },
+    onError: (error) => {
+      console.log('추가 실패:', error);
+      setErrors({
+        submit: '사용자 추가에 실패했습니다. 다시 시도해주세요.',
+      });
     },
   });
 
@@ -34,21 +51,7 @@ export default function AddPage() {
 
     if (!validateForm()) return;
 
-    addUserMutation.mutate(
-      { name },
-      {
-        onSuccess: (newUser) => {
-          console.log('새 사용자 추가됨:', newUser);
-          router.push('/mock');
-        },
-        onError: (error) => {
-          console.log('추가 실패:', error);
-          setErrors({
-            submit: '사용자 추가에 실패했습니다. 다시 시도해주세요.',
-          });
-        },
-      },
-    );
+    addUserMutation();
   };
 
   return (
@@ -73,7 +76,7 @@ export default function AddPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="사용자 이름"
-            disabled={addUserMutation.isPending}
+            disabled={isPending}
             style={{
               width: '100%',
               padding: '10px',
@@ -91,10 +94,10 @@ export default function AddPage() {
 
         <Button
           type="submit"
-          disabled={addUserMutation.isPending}
-          color={addUserMutation.isPending ? 'secondary' : 'primary'}
+          disabled={isPending}
+          color={isPending ? 'secondary' : 'primary'}
         >
-          {addUserMutation.isPending ? (
+          {isPending ? (
             <>
               <span>추가 중...</span>
               <span style={{ marginLeft: '10px' }}>⏳</span>
